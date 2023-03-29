@@ -10,11 +10,17 @@ plugins:
 custom:
   webpack:
     webpackConfig: ./webpack.config.js
+  documentation:
+    api:
+      info:
+      title: Todo app
+      Version: v1.0.0
+      description: Serverless application, Udacity project 4, olebogeng
 
 provider:
   name: aws
   runtime: nodejs12.x
-  lambdaHashingVersion: '20200924'
+  lambdaHashingVersion: '20201221'
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
 
@@ -25,32 +31,29 @@ provider:
   # Use these variables in the functions and resouorces section below. For example, 
   # ${self:provider.environment.ATTACHMENT_S3_BUCKET}
   environment:
-    TODOS_TABLE: Todos-${self:provider.stage}
+    TODOS_TABLE: Todos-Table-olebogeng-${self:provider.stage}
     TODOS_CREATED_AT_INDEX: CreatedAtIndex  #
     ATTACHMENT_S3_BUCKET: olebogeng-todo-images-serverless-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
     PROJECT_NAME: serverless-todo-app
-    INDEX_NAME: ${self:provider.enviroment.TODOS_CREATED_AT_INDEX}
+    #INDEX_NAME: ${self:provider.enviroment.TODOS_CREATED_AT_INDEX}
 
   logs:
     # Enable API Gateway logs
     restApi: true
-
-  iam:
-    role:
-      statements:
-        - Effect: Allow
-          Action:
-            - xray:PutTelemetryRecords
-            - xray:PutTraceSegments
-          Resource: "*"
 
 
 functions:
 
  Auth:
    handler: src/lambda/auth/auth0Authorizer.handler
-   role: roleAuth
+   iamRoleStatements:  
+      - Effect: Allow
+        Action:
+          - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
+        Resource:
+          - "*"
 
   # TODO: Configure this function - 
   # Provide iamRoleStatements property for performing Actions on DynamoDB
@@ -59,27 +62,19 @@ functions:
    # events:
    #   - http:
    #       method: get
- #          path: todos
-  #        cors: true
+   #          path: todos
+   #        cors: true
    #       authorizer: Auth
-
-  # TODO: Configure this function - 
-  # Provide iamRoleStatements property. Decide the Actions and AWS Resource. 
-  # To refer to an AWS resource defined in the "Resources" section, you can use "Resource: !GetAtt <resource-name>.Arn"
-  # To validate incoming HTTP requests, we have provided the request schemas in function definition below. 
-CreateTodo:
-   handler: src/lambda/http/createTodo.handler
-   events:
-     - http:
-         method: post
-         path: todos
-         cors: true
-         authorizer: Auth
-         request:
-            schemas:
-              application/json: ${file(models/create-todo-model.json)}
-   iamRoleStatementsInherit: true
-   iamRoleStatements:
+   GetTodos:
+    handler: src/lambda/http/getTodos.handler
+    events:
+      - http:
+          method: get
+          path: todos
+          cors: true
+          authorizer: Auth
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
       - Effect: Allow
         Action:
           - dynamodb:PutItem
@@ -93,7 +88,36 @@ CreateTodo:
         Resource:
           - "*"
 
-
+  # TODO: Configure this function - 
+  # Provide iamRoleStatements property. Decide the Actions and AWS Resource. 
+  # To refer to an AWS resource defined in the "Resources" section, you can use "Resource: !GetAtt <resource-name>.Arn"
+  # To validate incoming HTTP requests, we have provided the request schemas in function definition below. 
+   CreateTodo:
+    handler: src/lambda/http/createTodo.handler
+    events:
+      - http:
+         method: post
+         path: todos
+         cors: true
+         authorizer: Auth
+         request:
+            schemas:
+              application/json: ${file(models/create-todo-model.json)}
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:GetItem
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
+        Resource:
+          - "*"
+          
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements, and request schemas
   #UpdateTodo:
@@ -102,6 +126,33 @@ CreateTodo:
   #    - http:
   #        method: patch
   #        path: todos/{todoId}
+   UpdateTodo:
+    handler: src/lambda/http/updateTodo.handler
+    events:
+      - http:
+          method: patch
+          path: todos/{todoId}
+          cors: true
+          reqValidatorName: RequestBodyValidator
+          authorizer: Auth
+          request:
+            schemas:
+              application/json: ${file(models/update-todo-model.json)}
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
+        Resource:
+          - "*"
 
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements
@@ -110,16 +161,67 @@ CreateTodo:
   #  events:
   #    - http:
   #        method: delete
- #         path: todos/{todoId}
+  #         path: todos/{todoId}
+   DeleteTodo:
+    handler: src/lambda/http/deleteTodo.handler
+    events:
+      - http:
+          method: delete
+          path: todos/{todoId}
+          cors: true
+          authorizer: Auth
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:GetItem
+          - dynamodb:Query
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
+        Resource:
+          - "*"
 
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements
- # GenerateUploadUrl:
- #   handler: src/lambda/http/generateUploadUrl.handler
+  # GenerateUploadUrl:
+  #   handler: src/lambda/http/generateUploadUrl.handler
   #  events:
    #   - http:
     #      method: post
      #     path: todos/{todoId}/attachment
+   GenerateUploadUrl:
+    handler: src/lambda/http/generateUploadUrl.handler
+    events:
+      - http:
+          method: post
+          path: todos/{todoId}/attachment
+          cors: true
+          authorizer: Auth
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:GetItem
+          - dynamodb:Query
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action: 
+          - s3:PutObject
+          - s3:GetObject
+        Resource: 'arn:aws:s3:::${self:provider.environment.ATTACHMENT_S3_BUCKET}/*'
+      - Effect: Allow
+        Action:
+          - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
+        Resource:
+          - "*"
 
 resources:
   Resources:
@@ -201,8 +303,8 @@ resources:
     #   Type: AWS::S3::BucketPolicy
     #   Properties:
     BucketPolicy:
-        Type: AWS::S3::BucketPolicy
-        Properties:
+       Type: AWS::S3::BucketPolicy
+       Properties:
           PolicyDocument:
             Id: MyPolicy
             Version: "2012-10-17"
@@ -213,12 +315,11 @@ resources:
                 Action: 's3:GetObject'
                 Resource: 'arn:aws:s3:::${self:provider.environment.ATTACHMENT_S3_BUCKET}/*'
           Bucket: !Ref AttachmentsBucket
-
-      RequestBodyValidator:
-        Type: AWS::ApiGateway::RequestValidator
-        Properties:
-          Name: 'request-body-validator'
-          RestApiId:
-            Ref: ApiGatewayRestApi
-          ValidateRequestBody: true
-          ValidateRequestParameters: false
+    RequestBodyValidator:
+      Type: AWS::ApiGateway::RequestValidator
+      Properties:
+        Name: 'request-body-validator'
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ValidateRequestBody: true
+        ValidateRequestParameters: false 

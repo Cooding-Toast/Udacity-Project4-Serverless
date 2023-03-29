@@ -27,7 +27,25 @@ export class TodosAccess {
             Item: todoItem
         })
         .promise()
-
+        
         return todoItem
+    }
+
+    async getAllTodos(userId: string): Promise<TodoItem[]>{
+
+        const result = await this.doctClient
+        .query({
+            TableName: this.todosTable,
+            IndexName: this.todoIndex,
+            KeyConditionExpression: 'userId = :userId',
+            ExpressionAttributeValues: {
+                ':userId': userId
+            }
+        })
+        .promise()
+        .then(res => res.Items)
+
+        return result as TodoItem[]
+  
     }
 }

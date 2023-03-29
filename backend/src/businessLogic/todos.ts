@@ -43,10 +43,19 @@ export async function createTodo( event
         todoId,
         name: parsedTodo.name,
         createdAt,
+        dueDate: parsedTodo.dueDate,
         done: false,
         attachementUrl: s3AttachmentUrl
     }
 
     return await todosAcess.createTodoItem(new_TodoItem)
 
+}
+
+export async function getTodosForUser( event
+    ): Promise<TodoItem[]> {
+        //const parsedTodo: CreateTodoRequest = JSON.parse(event.body)
+        const userId = utils.getUserId(event)
+
+    return todosAcess.getAllTodos(userId)
 }

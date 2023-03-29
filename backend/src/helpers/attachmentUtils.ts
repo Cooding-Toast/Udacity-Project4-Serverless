@@ -3,7 +3,7 @@ import * as AWSXRay from 'aws-xray-sdk'
 
 
 const XAWS = AWSXRay.captureAWS(AWS)
-const s3BucketName = process.env.ATTCHMENTS_S3_BUCKET
+const s3BucketName = process.env.ATTCHMENT_S3_BUCKET
 const urlExpiration = process.env.SIGNED_URL_EXPIRATION
 
 
