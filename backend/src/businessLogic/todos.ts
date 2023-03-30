@@ -7,6 +7,7 @@ import { createLogger } from '../utils/logger'
 import * as utils from '../lambda/utils'
 import * as uuid from 'uuid'
 import * as createError from 'http-errors'
+import { TodoUpdate } from '../models/TodoUpdate';
 
 // TODO: Implement businessLogic
 
@@ -58,4 +59,25 @@ export async function getTodosForUser( event
         const userId = utils.getUserId(event)
 
     return todosAcess.getAllTodos(userId)
+}
+
+//
+export async function updatedTodo(event
+    ): Promise <TodoUpdate> {
+
+    const parsedTodo: UpdateTodoRequest = JSON.parse(event.body)
+    const userId = utils.getUserId(event)
+    const todoId = event.pathParameters.todoId
+    
+
+    const todoUpdatedIterm = {
+     userId,
+     todoId,
+     parsedTodo
+    }
+    
+
+   return await todosAcess.updateTodoItem(todoUpdatedIterm)
+     
+    
 }
