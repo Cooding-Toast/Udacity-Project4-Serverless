@@ -62,7 +62,7 @@ export async function getTodosForUser( event
 }
 
 //
-export async function updatedTodo(event
+export async function updateTodo(event
     ): Promise <TodoUpdate> {
 
     const parsedTodo: UpdateTodoRequest = JSON.parse(event.body)
@@ -80,4 +80,20 @@ export async function updatedTodo(event
    return await todosAcess.updateTodoItem(todoUpdatedIterm)
      
     
+}
+
+//
+export async function deleteTodo(event
+): Promise <String> {
+
+    const userId = utils.getUserId(event)
+    const todoId = event.pathParameters.todoId
+
+    const todo = {
+        userId,
+        todoId
+      
+       }
+
+    return todosAcess.deleteTodoItem(todo)
 }
